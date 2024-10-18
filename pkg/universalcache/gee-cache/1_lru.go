@@ -17,13 +17,13 @@ type entry struct {
 	value Value
 }
 
-// Value use Len to count how many bytes it takes
+// Value() use Len to count how many bytes it takes
 type Value interface {
 	Len() int
 }
 
-// New is the Constructor of Cache
-func New(maxBytes int64, onEvicted func(string, Value)) *Cache {
+// New() is the Constructor of Cache
+func NewCache(maxBytes int64, onEvicted func(string, Value)) *Cache {
 	return &Cache{
 		maxBytes:  maxBytes,
 		ll:        list.New(),
@@ -32,7 +32,7 @@ func New(maxBytes int64, onEvicted func(string, Value)) *Cache {
 	}
 }
 
-// Get look ups a key's value
+// Get() look ups a key's value
 func (c *Cache) Get(key string) (value Value, ok bool) {
 	if ele, ok := c.cache[key]; ok {
 		c.ll.MoveToFront(ele)
@@ -42,7 +42,7 @@ func (c *Cache) Get(key string) (value Value, ok bool) {
 	return
 }
 
-// RemoveOldest removes the oldest item
+// RemoveOldest() removes the oldest item
 func (c *Cache) RemoveOldest() {
 	ele := c.ll.Back()
 	if ele != nil {
@@ -56,7 +56,7 @@ func (c *Cache) RemoveOldest() {
 	}
 }
 
-// Add adds a value to the cache.
+// Add() adds a value to the cache.
 func (c *Cache) Add(key string, value Value) {
     
 	if ele, ok := c.cache[key]; ok {
@@ -74,7 +74,7 @@ func (c *Cache) Add(key string, value Value) {
 	}
 }
 
-// Len the number of cache entries
+// Len() the number of cache entries
 func (c *Cache) Len() int {
 	return c.ll.Len()
 }

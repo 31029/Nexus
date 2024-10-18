@@ -1,9 +1,14 @@
 package main
 
 import (
-	backend "github.com/31029/nexus/universal-backend/core"
+	"bytes"
+	"io"
+	"os"
 )
 
 func main() {
-	backend.RunHttpServer()
+	var w io.Writer
+	io.WriteString()
+	w = os.Stdout
+	rw := w.(io.ReadWriter) // success: *os.File has both Read and Write
 }
