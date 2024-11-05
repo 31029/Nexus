@@ -6,6 +6,7 @@ import "container/list"
 type Cache struct {
 	maxBytes int64
 	nbytes   int64
+	// 用于维护LRU关系的双向链表
 	ll       *list.List
 	cache    map[string]*list.Element
 	// optional and executed when an entry is purged.
