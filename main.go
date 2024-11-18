@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/31029/nexus/pkg/universalbackend/geeorm"
 	geecache "github.com/31029/nexus/pkg/universalcache/gee-cache"
 )
 
@@ -52,7 +54,11 @@ func startAPIServer(apiAddr string, gee *geecache.Group) {
 
 }
 
-func main() {
+func main()  {
+	main_geeorm()
+}
+
+func main_geecache() {
 	var port int
 	var api bool
 	flag.IntVar(&port, "port", 8001, "Geecache server port")
@@ -76,4 +82,16 @@ func main() {
 		go startAPIServer(apiAddr, gee)
 	}
 	startCacheServer(addrMap[port], []string(addrs), gee)
+}
+
+func main_geeorm() {
+	engine, _ := geeorm.NewEngine("sqlite3", "gee.db")
+	defer engine.Close()
+	s := engine.NewSession()
+	_, _ = s.Raw("DROP TABLE IF EXISTS User;").Exec()
+    _, _ = s.Raw("CREATE TABLE User(Name text);").Exec()
+    _, _ = s.Raw("CREATE TABLE User(Name text);").Exec()
+	result, _ := s.Raw("INSERT INTO User(`Name`) values (?), (?)", "Tom", "Sam").Exec()
+	count, _ := result.RowsAffected()
+	fmt.Printf("Exec success, %d affected\n", count)
 }
