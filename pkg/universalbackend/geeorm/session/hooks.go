@@ -3,7 +3,7 @@ package session
 import (
 	"reflect"
 
-	"github.com/31029/nexus/pkg/universalbackend/geeorm/log"
+	//"github.com/31029/nexus/pkg/universalbackend/geeorm/log"
 )
 
 // Hooks constants
@@ -18,23 +18,29 @@ const (
 	AfterInsert  = "AfterInsert"
 )
 
+type IAfterQuery interface {
+    AfterQuery(s *Session) error
+}
+
+type IBeforeInsert interface {
+    BeforeInsert(s *Session) error
+}
+
 // CallMethod calls the registered hooks
 // 钩子机制同样是通过反射来实现的，s.RefTable().Model 或 value 即当前会话正在操作的对象，使用 MethodByName 方法反射得到该对象的方法。
 func (s *Session) CallMethod(method string, value interface{}) {
-	fm := reflect.ValueOf(s.RefTable().Model).MethodByName(method)
-	if value != nil {
-		fm = reflect.ValueOf(value).MethodByName(method)
-	}
-	param := []reflect.Value{reflect.ValueOf(s)}
-	if fm.IsValid() {
-		if v := fm.Call(param); len(v) > 0 {
-			if err, ok := v[0].Interface().(error); ok {
-				log.Error(err)
-			}
-		}
-	}
+	param := reflect.ValueOf(value)
+    switch method {
+    case AfterQuery:
+        if i, ok := param.Interface().(IAfterQuery); ok {
+            i.AfterQuery(s)
+        }
+    case BeforeInsert:
+        if i, ok := param.Interface().(IBeforeInsert); ok {
+            i.BeforeInsert(s)
+        }
+    default:
+        panic("unsupported hook method")
+    }
 	return
 }
-
-// 岗位推荐
-// 失业率考核
