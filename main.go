@@ -8,6 +8,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/31029/nexus/pkg/universalbackend/geeorm"
+	backendcore "github.com/31029/nexus/pkg/universalbackend/backendcore"
 	geecache "github.com/31029/nexus/pkg/universalcache/gee-cache"
 )
 
@@ -54,10 +55,6 @@ func startAPIServer(apiAddr string, gee *geecache.Group) {
 
 }
 
-func main()  {
-	main_geeorm()
-}
-
 func main_geecache() {
 	var port int
 	var api bool
@@ -94,4 +91,31 @@ func main_geeorm() {
 	result, _ := s.Raw("INSERT INTO User(`Name`) values (?), (?)", "Tom", "Sam").Exec()
 	count, _ := result.RowsAffected()
 	fmt.Printf("Exec success, %d affected\n", count)
+}
+
+func main_backendcore() {
+	r := backendcore.New()
+	r.GET("/", func(c *backendcore.Context) {
+		c.HTML(http.StatusOK, "<h1>Hello Gee</h1>")
+	})
+
+	r.GET("/hello", func(c *backendcore.Context) {
+		// expect /hello?name=geektutu
+		c.String(http.StatusOK, "hello %s, you're at %s\n", c.Query("name"), c.Path)
+	})
+
+	r.GET("/hello/:name", func(c *backendcore.Context) {
+		// expect /hello/geektutu
+		c.String(http.StatusOK, "hello %s, you're at %s\n", c.Param("name"), c.Path)
+	})
+
+	r.GET("/assets/*filepath", func(c *backendcore.Context) {
+		c.JSON(http.StatusOK, backendcore.H{"filepath": c.Param("filepath")})
+	})
+
+	r.Run(":9999")
+}
+
+func main()  {
+	main_geeorm()
 }

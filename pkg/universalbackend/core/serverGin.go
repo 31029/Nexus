@@ -1,4 +1,4 @@
-package gee
+package core
 
 import "github.com/gin-gonic/gin"
 
