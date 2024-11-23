@@ -121,6 +121,11 @@ func main_backendcore() {
 				"password": c.PostForm("password"),
 			})
 		})
+		v2.GET("/panic", func(c *backendcore.Context) {
+			names := []string{"a", "b"}
+			c.JSON(200, names[2])
+
+		})
 
 	}
 
@@ -128,5 +133,5 @@ func main_backendcore() {
 }
 
 func main()  {
-	main_geeorm()
+	main_backendcore()
 }
