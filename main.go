@@ -8,7 +8,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/31029/nexus/pkg/universalbackend/geeorm"
-	backendcore "github.com/31029/nexus/pkg/universalbackend/backendcore"
+	backendcore "github.com/31029/nexus/pkg/universalbackend/core"
 	geecache "github.com/31029/nexus/pkg/universalcache/gee-cache"
 )
 
@@ -29,19 +29,19 @@ func createGroup() *geecache.Group {
 		}))
 }
 
-func startCacheServer(addr string, addrs []string, gee *geecache.Group) {
+func startCacheServer(addr string, addrs []string, backendcore *geecache.Group) {
 	peers := geecache.NewHTTPPool(addr)
 	peers.Set(addrs...)
-	gee.RegisterPeers(peers)
+	backendcore.RegisterPeers(peers)
 	log.Println("geecache is running at", addr)
 	log.Fatal(http.ListenAndServe(addr[7:], peers))
 }
 
-func startAPIServer(apiAddr string, gee *geecache.Group) {
+func startAPIServer(apiAddr string, backendcore *geecache.Group) {
 	http.Handle("/api", http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			key := r.URL.Query().Get("key")
-			view, err := gee.Get(key)
+			view, err := backendcore.Get(key)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -74,15 +74,15 @@ func main_geecache() {
 		addrs = append(addrs, v)
 	}
 
-	gee := createGroup()
+	backendcore := createGroup()
 	if api {
-		go startAPIServer(apiAddr, gee)
+		go startAPIServer(apiAddr, backendcore)
 	}
-	startCacheServer(addrMap[port], []string(addrs), gee)
+	startCacheServer(addrMap[port], []string(addrs), backendcore)
 }
 
 func main_geeorm() {
-	engine, _ := geeorm.NewEngine("sqlite3", "gee.db")
+	engine, _ := geeorm.NewEngine("sqlite3", "backendcore.db")
 	defer engine.Close()
 	s := engine.NewSession()
 	_, _ = s.Raw("DROP TABLE IF EXISTS User;").Exec()
@@ -95,23 +95,34 @@ func main_geeorm() {
 
 func main_backendcore() {
 	r := backendcore.New()
-	r.GET("/", func(c *backendcore.Context) {
-		c.HTML(http.StatusOK, "<h1>Hello Gee</h1>")
+	r.GET("/index", func(c *backendcore.Context) {
+		c.HTML(http.StatusOK, "<h1>Index Page</h1>")
 	})
+	v1 := r.Group("/v1")
+	{
+		v1.GET("/", func(c *backendcore.Context) {
+			c.HTML(http.StatusOK, "<h1>Hello Gee</h1>")
+		})
 
-	r.GET("/hello", func(c *backendcore.Context) {
-		// expect /hello?name=geektutu
-		c.String(http.StatusOK, "hello %s, you're at %s\n", c.Query("name"), c.Path)
-	})
+		v1.GET("/hello", func(c *backendcore.Context) {
+			// expect /hello?name=geektutu
+			c.String(http.StatusOK, "hello %s, you're at %s\n", c.Query("name"), c.Path)
+		})
+	}
+	v2 := r.Group("/v2")
+	{
+		v2.GET("/hello/:name", func(c *backendcore.Context) {
+			// expect /hello/geektutu
+			c.String(http.StatusOK, "hello %s, you're at %s\n", c.Param("name"), c.Path)
+		})
+		v2.POST("/login", func(c *backendcore.Context) {
+			c.JSON(http.StatusOK, backendcore.H{
+				"username": c.PostForm("username"),
+				"password": c.PostForm("password"),
+			})
+		})
 
-	r.GET("/hello/:name", func(c *backendcore.Context) {
-		// expect /hello/geektutu
-		c.String(http.StatusOK, "hello %s, you're at %s\n", c.Param("name"), c.Path)
-	})
-
-	r.GET("/assets/*filepath", func(c *backendcore.Context) {
-		c.JSON(http.StatusOK, backendcore.H{"filepath": c.Param("filepath")})
-	})
+	}
 
 	r.Run(":9999")
 }
